@@ -70,7 +70,7 @@
     <a href="{{ route('reports.sales.excel', request()->query()) }}" class="btn btn-success btn-sm text-white">
       <i class="bi bi-file-earmark-excel me-1"></i> Exportar Excel
     </a>
-    <a href="{{ route('reports.sales.pdf', request()->query()) }}" target="_blank" class="btn btn-danger btn-sm text-white">
+    <a href="{{ route('reports.sales.pdf', request()->query()) }}" class="btn btn-danger btn-sm text-white">
       <i class="bi bi-file-earmark-pdf me-1"></i> Exportar PDF
     </a>
   </div>

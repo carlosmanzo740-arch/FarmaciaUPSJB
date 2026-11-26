@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\SalesReportExport;
 use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Sale;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
 {
@@ -21,13 +24,7 @@ class ReportController extends Controller
         ]);
 
         [$from, $to, $sales] = $this->getFilteredData($request);
-
-        $summary = [
-            'count' => $sales->count(),
-            'total' => $sales->sum('total'),
-            'igv' => $sales->sum('igv'),
-            'average' => $sales->avg('total') ?? 0,
-        ];
+        $summary = $this->buildSummary($sales);
 
         $chart = $sales->groupBy(fn ($sale) => $sale->date->format('d/m'))
             ->map(fn ($group) => round($group->sum('total'), 2));
@@ -59,57 +56,14 @@ class ReportController extends Controller
         ]);
 
         [$from, $to, $sales] = $this->getFilteredData($request);
+        $summary = $this->buildSummary($sales);
 
-        $filename = 'reporte_ventas_' . $from . '_a_' . $to . '.xls';
+        $filename = 'reporte_ventas_' . $from . '_a_' . $to . '.xlsx';
 
-        $headers = [
-            'Content-Type' => 'application/vnd.ms-excel; charset=UTF-8',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-        ];
-
-        $totalIgv = $sales->sum('igv');
-        $totalVenta = $sales->sum('total');
-
-        $callback = function () use ($sales, $from, $to, $totalIgv, $totalVenta) {
-            echo "\xEF\xBB\xBF";
-            echo "<table border='1'>";
-            echo "<tr><th colspan='6'>Reporte de ventas ({$from} al {$to})</th></tr>";
-            echo "<tr>
-                    <th>N.°</th>
-                    <th>Fecha</th>
-                    <th>Cliente</th>
-                    <th>Vendedor</th>
-                    <th>IGV</th>
-                    <th>Total</th>
-                  </tr>";
-
-            foreach ($sales as $sale) {
-                $num = str_pad($sale->id, 6, '0', STR_PAD_LEFT);
-                $fecha = $sale->date->format('d/m/Y H:i');
-                $cliente = e($sale->customer->name);
-                $vendedor = e($sale->user->name);
-                $igv = number_format($sale->igv, 2, '.', '');
-                $total = number_format($sale->total, 2, '.', '');
-
-                echo "<tr>
-                        <td>{$num}</td>
-                        <td>{$fecha}</td>
-                        <td>{$cliente}</td>
-                        <td>{$vendedor}</td>
-                        <td>{$igv}</td>
-                        <td>{$total}</td>
-                      </tr>";
-            }
-
-            echo "<tr>
-                    <th colspan='4'>Totales</th>
-                    <th>" . number_format($totalIgv, 2, '.', '') . "</th>
-                    <th>" . number_format($totalVenta, 2, '.', '') . "</th>
-                  </tr>";
-            echo "</table>";
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return Excel::download(
+            new SalesReportExport($sales, $summary, $from, $to),
+            $filename
+        );
     }
 
     public function exportPdf(Request $request)
@@ -123,15 +77,14 @@ class ReportController extends Controller
         ]);
 
         [$from, $to, $sales] = $this->getFilteredData($request);
+        $summary = $this->buildSummary($sales);
 
-        $summary = [
-            'count' => $sales->count(),
-            'total' => $sales->sum('total'),
-            'igv' => $sales->sum('igv'),
-            'average' => $sales->avg('total') ?? 0,
-        ];
+        $pdf = Pdf::loadView('principal.reports.pdf', compact('sales', 'summary', 'from', 'to'))
+            ->setPaper('a4', 'portrait');
 
-        return view('principal.reports.pdf', compact('sales', 'summary', 'from', 'to'));
+        $filename = 'reporte_ventas_' . $from . '_a_' . $to . '.pdf';
+
+        return $pdf->download($filename);
     }
 
     private function getFilteredData(Request $request): array
@@ -148,5 +101,15 @@ class ReportController extends Controller
             ->get();
 
         return [$from, $to, $sales];
+    }
+
+    private function buildSummary($sales): array
+    {
+        return [
+            'count' => $sales->count(),
+            'total' => $sales->sum('total'),
+            'igv' => $sales->sum('igv'),
+            'average' => $sales->avg('total') ?? 0,
+        ];
     }
 }
