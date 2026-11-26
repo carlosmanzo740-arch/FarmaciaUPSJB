@@ -5,6 +5,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MedicineController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\SupplierController;
@@ -29,6 +30,9 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:Administrador,Químico farmacéutico')->group(function () {
         Route::resource('medicines', MedicineController::class)->except('show');
         Route::resource('suppliers', SupplierController::class)->except('show');
+        Route::get('/reports/sales', [ReportController::class, 'sales'])->name('reports.sales');
+        Route::get('/reports/sales/export/excel', [ReportController::class, 'exportExcel'])->name('reports.sales.excel');
+        Route::get('/reports/sales/export/pdf', [ReportController::class, 'exportPdf'])->name('reports.sales.pdf');
     });
 
     Route::resource('customers', CustomerController::class)->except('show');
