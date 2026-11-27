@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="San Juan – Sistema de Venta de Medicamentos">
+  <meta name="theme-color" content="#ff0a41">
   <title>FARM SJB | @yield('title')</title>
+  <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
+  <link rel="manifest" href="{{ asset('manifest.json') }}">
   <link rel="stylesheet" href="{{ asset('css/bootstrap.css') }}">
   <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
 </head>
@@ -67,6 +70,15 @@
 <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
 <script src="{{ asset('js/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ asset('js/app.js') }}"></script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .catch((err) => console.error('Error al registrar SW:', err));
+    });
+  }
+</script>
 
 {{-- Scripts propios de cada vista (@push('scripts')) --}}
 @stack('scripts')
